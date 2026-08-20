@@ -21,9 +21,11 @@ is recorded.
 
 1. Refresh the generic `PersonalizedImages/Xcode_iOS_DDI_Personalized/`
    payload from an approved local Xcode with `update_ddi.py`.
-2. Build a tar containing only `BuildManifest.plist`, `Image.dmg`, and
-   `Image.dmg.trustcache` at the archive root. Do not include folders, links,
-   tickets, logs, or device-specific files.
+2. Build a USTAR tar containing only `BuildManifest.plist`, `Image.dmg`, and
+   `Image.dmg.trustcache` at the archive root. On macOS, use
+   `COPYFILE_DISABLE=1 tar --format ustar --no-mac-metadata` so that neither
+   PAX nor hidden AppleDouble `._*` entries are emitted. Do not include
+   folders, links, tickets, logs, or device-specific files.
 3. Compute SHA-256 and exact byte sizes for the tar and every member.
 4. Add a new exact-build catalog entry with those values and the direct raw
    archive URL. Keep JSON canonical: sorted object keys, sorted arrays, and
