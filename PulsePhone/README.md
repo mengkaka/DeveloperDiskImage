@@ -1,0 +1,38 @@
+# PulsePhone release catalog
+
+This directory is the controlled source consumed by PulsePhone's Developer
+Support preparation workflow. The `release` branch, this canonical catalog,
+and the exact raw GitHub URLs are the trust boundary for that workflow.
+
+## Published iOS 26.5.2 candidate
+
+`developer-image-catalog.v1.json` has one exact-build candidate for iOS
+26.5.2 build `23F84`. It was made from the local Xcode personalized DDI
+`Restore` payload and contains no device identity, pairing records, ECID,
+nonce, TSS ticket, or device logs.
+
+The entry deliberately uses `evidenceState: "target"`: its archive structure,
+individual file hashes, and BuildManifest identities were verified locally,
+but its real TSS, mount, service probe, cleanup, and retry behavior still need
+an exact-device acceptance run. Do not change it to `verified` until that run
+is recorded.
+
+## Maintainer procedure
+
+1. Refresh the generic `PersonalizedImages/Xcode_iOS_DDI_Personalized/`
+   payload from an approved local Xcode with `update_ddi.py`.
+2. Build a tar containing only `BuildManifest.plist`, `Image.dmg`, and
+   `Image.dmg.trustcache` at the archive root. Do not include folders, links,
+   tickets, logs, or device-specific files.
+3. Compute SHA-256 and exact byte sizes for the tar and every member.
+4. Add a new exact-build catalog entry with those values and the direct raw
+   archive URL. Keep JSON canonical: sorted object keys, sorted arrays, and
+   no whitespace.
+5. Verify the catalog with PulsePhone's canonical decoder and verify the tar
+   listing and hashes before committing to `release`.
+6. Run the exact-device TSS/mount/probe/cleanup acceptance. Only then change
+   that entry's `evidenceState` from `target` to `verified` in a new revision.
+
+PulsePhone deliberately fetches the direct catalog and archive URLs. It does
+not call the GitHub Tree API or infer a nearest OS/build match. A cached valid
+catalog and verified asset remain usable when this source is unavailable.
