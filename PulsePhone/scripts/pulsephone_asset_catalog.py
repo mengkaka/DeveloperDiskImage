@@ -253,7 +253,8 @@ def validate_catalog(root: Path, catalog: dict[str, Any], catalog_bytes: bytes |
     ordered_versions: list[tuple[int, int, int]] = []
     for entry in classic_assets:
         if not isinstance(entry, dict) or set(entry) != {
-            "ddiVersion", "contentManifestSHA256", "archiveSHA256", "archiveSize", "sourceURL"
+            "ddiVersion", "contentManifestSHA256", "archiveSHA256", "archiveSize", "sourceURL",
+            "xcodeDDIVersion",
         }:
             raise CatalogError("developerDiskImages entry has an invalid shape")
         version = required_string(entry, "ddiVersion")
@@ -261,9 +262,16 @@ def validate_catalog(root: Path, catalog: dict[str, Any], catalog_bytes: bytes |
             raise CatalogError(f"duplicate ddiVersion: {version}")
         classic_versions.add(version)
         ordered_versions.append(version_key(version))
+        version_key(required_string(entry, "xcodeDDIVersion"))
         verify_archive(root, entry, "classic")
     if ordered_versions != sorted(ordered_versions):
         raise CatalogError("developerDiskImages must be sorted by parsed version")
+    for entry in classic_assets:
+        xcode_version = required_string(entry, "xcodeDDIVersion")
+        if xcode_version not in classic_versions:
+            raise CatalogError(
+                f"xcodeDDIVersion must refer to a published classic DDI: {xcode_version}"
+            )
 
     build_ids: set[str] = set()
     ordered_build_ids: list[str] = []
