@@ -27,7 +27,7 @@ probe, cleanup, and retry evidence for that build.
 3. Compute SHA-256 and exact byte sizes for the tar and every member.
 4. Add the BaseAsset with those values and its direct raw archive URL. Add a
    `catalogEntry` only after exact-device acceptance; keep JSON canonical:
-   sorted object keys, sorted arrays, and no whitespace.
+   sorted object keys, sorted arrays, no whitespace, and no trailing newline.
 5. Verify the catalog with PulsePhone's canonical decoder and verify the tar
    listing and hashes before committing to `release`.
 6. Run the exact-device TSS/mount/probe/cleanup acceptance. Only then change
