@@ -16,9 +16,10 @@ each contains exactly `DeveloperDiskImage.dmg` and
 `DeveloperDiskImage.dmg.signature`. The JSON field remains
 `developerDiskImages` even though the remote directory is named `DDI`.
 `ddiVersion` is the logical iOS matching key and archive label.
-`xcodeDDIVersion` is the separately declared selected Xcode `DeviceSupport/`
-directory that supplied the hash-pinned bytes. It is not a nearest-version
-fallback. A non-identical mapping is added only with documented device proof.
+On the host, PulsePhone enumerates direct `DeviceSupport/` child directories
+and accepts only the pair whose complete `contentManifestSHA256` exactly
+matches the selected catalog item. Directory names are never compatibility
+inputs or nearest-version fallbacks.
 
 An exact iOS 17+ `catalogEntry` is published only after a maintainer records
 real remote-asset acquisition, TSS, mount, service probe, cleanup, and retry
@@ -32,9 +33,7 @@ local candidate observation.
    new BaseImage.
 2. Run `PulsePhone/scripts/build-pulsephone-assets.py --catalog-revision
    YYYY-MM-DD.N`. It creates deterministic USTAR archives for all supported
-   classic DDI inputs and writes canonical JSON with no trailing newline. For
-   an approved cross-directory candidate, declare it explicitly, for example
-   `--xcode-ddi-version 16.2=16.1 --xcode-ddi-version 16.3=16.1`.
+   classic DDI inputs and writes canonical JSON with no trailing newline.
 3. Run `PulsePhone/scripts/verify-pulsephone-assets.py`. It verifies catalog
    canonicality, ordering, references, archive hashes, archive sizes, USTAR
    members, and content-manifest hashes.

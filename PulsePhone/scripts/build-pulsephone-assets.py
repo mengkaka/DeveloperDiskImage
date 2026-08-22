@@ -33,15 +33,6 @@ def parse_entry(value: str) -> dict[str, str]:
     return {"iosVersion": pieces[0], "buildID": pieces[1], "baseAssetID": pieces[2]}
 
 
-def parse_xcode_ddi_version(value: str) -> tuple[str, str]:
-    logical, separator, xcode = value.partition("=")
-    if separator != "=" or not logical or not xcode:
-        raise argparse.ArgumentTypeError(
-            "Xcode DDI mapping must be LOGICAL_VERSION=XCODE_DIRECTORY_VERSION"
-        )
-    return logical, xcode
-
-
 def parse_args() -> argparse.Namespace:
     root = Path(__file__).resolve().parents[2]
     parser = argparse.ArgumentParser(description=__doc__)
@@ -55,20 +46,10 @@ def parse_args() -> argparse.Namespace:
         metavar="IOS_VERSION,BUILD_ID,BASE_ASSET_ID",
       help="replace or add an exact verified iOS 17+ mapping",
     )
-    parser.add_argument(
-        "--xcode-ddi-version",
-        action="append",
-        default=[],
-        type=parse_xcode_ddi_version,
-        metavar="LOGICAL_VERSION=XCODE_DIRECTORY_VERSION",
-        help="declare the selected Xcode DeviceSupport directory for one classic DDI",
-    )
     return parser.parse_args()
 
 
-def build_classic_archive(
-    root: Path, version: str, xcode_ddi_version: str
-) -> dict[str, object]:
+def build_classic_archive(root: Path, version: str) -> dict[str, object]:
     source_directory = root / "DeveloperDiskImages" / version
     files = [(source_directory / name, name) for name in CLASSIC_MEMBERS]
     _, manifest_hash = content_manifest(files)
@@ -97,7 +78,6 @@ def build_classic_archive(
                     {"ddiVersion": version, "archiveSHA256": archive_hash}, "classic"
                 )
             ),
-            "xcodeDDIVersion": xcode_ddi_version,
         }
     finally:
         temporary.unlink(missing_ok=True)
@@ -116,16 +96,7 @@ def main() -> None:
         ),
         key=version_key,
     )
-    xcode_versions = {version: version for version in versions}
-    for logical, xcode in args.xcode_ddi_version:
-        if logical not in xcode_versions:
-            raise CatalogError(f"unknown logical classic DDI version: {logical}")
-        if xcode not in xcode_versions:
-            raise CatalogError(f"Xcode DDI directory is not a published classic version: {xcode}")
-        xcode_versions[logical] = xcode
-    classic_assets = [
-        build_classic_archive(root, version, xcode_versions[version]) for version in versions
-    ]
+    classic_assets = [build_classic_archive(root, version) for version in versions]
 
     replacements = {entry["buildID"]: entry for entry in args.catalog_entry}
     entries = {
