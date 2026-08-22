@@ -4,34 +4,39 @@ This directory is the controlled source consumed by PulsePhone's Developer
 Support preparation workflow. The `release` branch, this canonical catalog,
 and the exact raw GitHub URLs are the trust boundary for that workflow.
 
-## Published iOS 26 BaseImage candidate
+## Published Assets
 
 `developer-image-catalog.v1.json` has one BaseImage default candidate built
 from the selected Xcode iOS DDI `Restore` payload. It contains no device
 identity, pairing records, ECID, nonce, TSS ticket, or device logs.
 
-There is intentionally no `catalogEntry` for iOS 26.5.2 build `23F84` yet.
-The BaseImage can be selected as the default candidate, but an exact-build
-mapping is only published after a maintainer records real TSS, mount, service
-probe, cleanup, and retry evidence for that build.
+`developer-image-catalog.v1.json` also lists one deterministic USTAR archive
+per supported iOS 14--16 classic DDI. Those archives live in `archives/DDI/`;
+each contains exactly `DeveloperDiskImage.dmg` and
+`DeveloperDiskImage.dmg.signature`. The JSON field remains
+`developerDiskImages` even though the remote directory is named `DDI`.
+
+An exact iOS 17+ `catalogEntry` is published only after a maintainer records
+real remote-asset acquisition, TSS, mount, service probe, cleanup, and retry
+evidence for that build. It is not inferred from an Xcode-mounted reuse or a
+local candidate observation.
 
 ## Maintainer procedure
 
 1. Refresh the generic `PersonalizedImages/Xcode_iOS_DDI_Personalized/`
-   payload from an approved local Xcode with `update_ddi.py`.
-2. Build a USTAR tar containing only `BuildManifest.plist`, `Image.dmg`, and
-   `Image.dmg.trustcache` at the archive root. On macOS, use
-   `COPYFILE_DISABLE=1 tar --format ustar --no-mac-metadata` so that neither
-   PAX nor hidden AppleDouble `._*` entries are emitted. Do not include
-   folders, links, tickets, logs, or device-specific files.
-3. Compute SHA-256 and exact byte sizes for the tar and every member.
-4. Add the BaseAsset with those values and its direct raw archive URL. Add a
-   `catalogEntry` only after exact-device acceptance; keep JSON canonical:
-   sorted object keys, sorted arrays, no whitespace, and no trailing newline.
-5. Verify the catalog with PulsePhone's canonical decoder and verify the tar
-   listing and hashes before committing to `release`.
-6. Run the exact-device TSS/mount/probe/cleanup acceptance. Only then change
-   that entry's `evidenceState` from `target` to `verified` in a new revision.
+   payload from an approved local Xcode with `update_ddi.py` when publishing a
+   new BaseImage.
+2. Run `PulsePhone/scripts/build-pulsephone-assets.py --catalog-revision
+   YYYY-MM-DD.N`. It creates deterministic USTAR archives for all supported
+   classic DDI inputs and writes canonical JSON with no trailing newline.
+3. Run `PulsePhone/scripts/verify-pulsephone-assets.py`. It verifies catalog
+   canonicality, ordering, references, archive hashes, archive sizes, USTAR
+   members, and content-manifest hashes.
+4. Add an exact `catalogEntry` only after exact-device acceptance; the entry
+   contains only `iosVersion`, `buildID`, and `baseAssetID`.
+5. Commit the catalog, every newly referenced archive, README, and scripts in
+   one `release` commit, then run the exact-device TSS/mount/probe/cleanup
+   acceptance before declaring that entry verified.
 
 PulsePhone deliberately fetches the direct catalog and archive URLs. It does
 not call the GitHub Tree API or infer a nearest OS/build match. A cached valid
